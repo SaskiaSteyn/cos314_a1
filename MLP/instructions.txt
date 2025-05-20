@@ -1,0 +1,61 @@
+Stock MLP Classifier - Setup Instructions
+
+1. Prerequisites:
+   - Python 3.6 or higher installed on your system
+   - pip (Python package manager)
+
+2. Create a Virtual Environment (Recommended):
+   Open a terminal/command prompt and run:
+
+    On Windows:
+        python -m venv stock_mlp_env
+        stock_mlp_env\Scripts\activate
+    
+    On macOS/Linux:
+        python3 -m venv stock_mlp_env
+        source stock_mlp_env/bin/activate
+
+3. Install Required Packages:
+   With your virtual environment activated, run:
+        pip install numpy pandas scikit-learn
+
+4. Prepare Your Data:
+- Ensure you have two CSV files ready:
+  1) Training data (e.g., 'train_data.csv')
+  2) Test data (e.g., 'test_data.csv')
+- Each CSV should contain these columns at minimum:
+  ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Output']
+- The 'Output' column should be binary (0 or 1) indicating the prediction target
+
+5. Run the Classifier:
+- Save the provided Python script as 'stock_mlp.py'
+- Run the program with:
+        python stock_mlp.py
+- When prompted:
+  - Enter a random seed number (e.g., 42)
+  - Provide the path to your training data CSV
+  - Provide the path to your test data CSV
+
+6. Expected Output:
+- The program will display training progress every 100 epochs
+- After training completes, it will show:
+  - Classification report
+  - Confusion matrix
+  - Final accuracy score
+
+7. Troubleshooting:
+- If you get package errors, ensure your virtual environment is activated
+- For file not found errors, check your CSV file paths are correct
+- For shape mismatch errors, verify your CSV files have the required columns
+
+8. Deactivate Virtual Environment (when done):
+        deactivate
+
+Notes:
+- The model uses a 2-hidden-layer MLP with ReLU activation
+- Training uses mini-batch gradient descent
+- Default hyperparameters:
+- Learning rate: 0.001
+- Batch size: 64
+- Epochs: 1000
+- You can modify these in the script if needed
