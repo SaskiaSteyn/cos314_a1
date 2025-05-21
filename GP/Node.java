@@ -23,12 +23,14 @@ public class Node {
     public Node(TerminalType terminalType) {
         this.type = NodeType.TERMINAL;
         this.terminalType = terminalType;
+        this.arity = 0;
     }
 
     // Terminal constructor (CONSTANT with value)
     public Node(TerminalType terminalType, float value) {
         this(terminalType);
         this.value = value;
+        this.arity = 0;
     }
 
     public Node(GPFunction functionType) {
@@ -46,6 +48,7 @@ public class Node {
             this.value = other.value;
         } else {
             this.function = other.function;
+            this.arity = other.arity;
         }
 
         if (other.left != null)
@@ -115,7 +118,10 @@ public class Node {
 
 
     public float evaluate(StockData data) {
+//        System.out.println(type);
+
         if (type == NodeType.TERMINAL) {
+
             switch (terminalType) {
                 case OPEN: return data.getOpen();
                 case HIGH: return data.getHigh();
@@ -127,13 +133,26 @@ public class Node {
             }
         } else {
             float[] inputs;
-            if (function.getArity() == 2) {
-                inputs = new float[] { left.evaluate(data), right.evaluate(data) };
-            } else if (function.getArity() == 1) {
-                inputs = new float[] { left.evaluate(data) };
-            } else {
-                inputs = new float[0];
+//            if (function.getArity() == 2) {
+//                inputs = new float[] { left.evaluate(data), right.evaluate(data) };
+//            } else if (function.getArity() == 1) {
+//                inputs = new float[] { left.evaluate(data) };
+//            } else {
+//                inputs = new float[0];
+//            }
+
+            if (left != null) {
+                if (right == null) {
+                    inputs = new float[] { left.evaluate(data) };
+                }
+                else {
+                    inputs = new float[] { left.evaluate(data), right.evaluate(data) };
+                }
             }
+            else {
+                throw new RuntimeException("Function Node had no children");
+            }
+
             return function.apply(inputs);
         }
     }

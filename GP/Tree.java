@@ -31,8 +31,10 @@ public class Tree {
     }
 
 
-    public float evaluate(StockData data) {
-        return root.evaluate(data);
+    public int evaluate(StockData data) {
+        float value = root.evaluate(data);
+
+        return value <= 0? 0 : 1;
     }
 
     public Tree copy() {

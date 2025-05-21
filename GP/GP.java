@@ -56,14 +56,21 @@ public class GP {
             }
         } else {
             // Create Function node
-            GPFunction function = functions.get(rand.nextInt(functions.size()));
-            Node node = new Node(function);
-            
-            Node left = generateNode(depth - 1);
-            Node right = generateNode(depth - 1);
-            node.setLeftChild(left);
-            node.setRightChild(right);
-            return node;
+
+            // If depth doesn't allow function function node
+            if (depth <= 1) {
+                return generateNode(0);
+            }
+            else {
+                GPFunction function = functions.get(rand.nextInt(functions.size()));
+                Node node = new Node(function);
+
+                Node left = generateNode(depth - 1);
+                Node right = generateNode(depth - 1);
+                node.setLeftChild(left);
+                node.setRightChild(right);
+                return node;
+            }
         }
     }
 
@@ -80,17 +87,22 @@ public class GP {
     }
 
     private float computeFitness(Tree tree) {
-        float errorSum = 0f;
+        int correct = 0;
 
-        for (StockData data: dataset) {
-            float predicted = tree.evaluate(data);
-            float actual = data.getClose();
-            float error = Math.abs(predicted - actual);
+//        System.out.println("Dataset size = " + dataset.size());
 
-            errorSum += error;
+        for (int i = 0; i < dataset.size(); i++) {
+            StockData data = dataset.get(i);
+//            System.out.println("Row " + i);
+            int predicted = tree.evaluate(data);
+            int actual = data.getOutput();
+
+            if (predicted == actual) {
+                correct++;
+            }
         }
 
-        return errorSum / dataset.size();
+        return (float) correct / dataset.size();
     }
 
     public void run() {

@@ -21,7 +21,7 @@ public class Main {
         functions.add(new SubtractFunction());
         functions.add(new MultiplyFunction());
         functions.add(new DivideFunction());
-        GP gp = new GP(functions, 100, 5, 100, trainData);
+        GP gp = new GP(functions, 100, 2, 100, trainData);
 
         long startTime = System.currentTimeMillis();
 
@@ -44,11 +44,12 @@ public class Main {
 
         int correct = 0;
 
-        for (StockData data: testData) {
-            float predicted = bestTree.evaluate(data);
-            float actual = data.getAdjclose();
+        for (int i = 0; i < testData.size(); i++) {
+            StockData data = testData.get(i);
+            int predicted = bestTree.evaluate(data);
+            int actual = data.getOutput();
 
-            if (Math.abs(predicted - actual) <= 0.5) {
+            if (predicted == actual) {
                 correct++;
             }
         }
@@ -75,7 +76,7 @@ public class Main {
                 float low = Float.parseFloat(parts[2]);
                 float close = Float.parseFloat(parts[3]);
                 float volume = Float.parseFloat(parts[4]);
-                float output = Float.parseFloat(parts[5]);
+                int output = Integer.parseInt(parts[5]);
 
                 dataList.add(new StockData(open, high, low, close, volume, output));
             }

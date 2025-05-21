@@ -4,9 +4,9 @@ public class StockData {
     float low;
     float close;
     float adjclose;
-    float output;
+    int output;
 
-    StockData(float o, float h, float l, float c, float v, float out) {
+    StockData(float o, float h, float l, float c, float v, int out) {
         open = o;
         high = h;
         low = l;
@@ -34,4 +34,6 @@ public class StockData {
     float getAdjclose() {
         return adjclose;
     }
+
+    int getOutput() { return output; }
 }
