@@ -13,7 +13,7 @@ public class GP {
     private int maxDepth;
     private int maxGenerations;
 
-    public GP(List<GPFunction> functions, int size, int maxDepth, int maxGenerations, List<StockData> data) {
+    public GP(List<GPFunction> functions, int size, int maxDepth, int maxGenerations, List<StockData> data, Random random) {
         this.functions = functions;
         this.terminals = Arrays.asList(
                 Node.TerminalType.OPEN,
@@ -23,7 +23,7 @@ public class GP {
                 Node.TerminalType.ADJCLOSE,
                 Node.TerminalType.CONST
         );
-        this.rand = new Random();
+        this.rand = random;
 
         // Population size
         this.size = size;
@@ -45,7 +45,7 @@ public class GP {
     }
 
     private Node generateNode(int depth) {
-        if (depth == 0 || (depth > 1 && rand.nextDouble() < 0.3)) {
+        if (depth <= 1) {
             // Create a terminal node
             Node.TerminalType term = terminals.get(rand.nextInt(terminals.size()));
             if (term == Node.TerminalType.CONST) {
@@ -54,23 +54,18 @@ public class GP {
             } else {
                 return new Node(term);
             }
-        } else {
+        }
+        else {
             // Create Function node
 
-            // If depth doesn't allow function function node
-            if (depth <= 1) {
-                return generateNode(0);
-            }
-            else {
-                GPFunction function = functions.get(rand.nextInt(functions.size()));
-                Node node = new Node(function);
+            GPFunction function = functions.get(rand.nextInt(functions.size()));
+            Node node = new Node(function);
 
-                Node left = generateNode(depth - 1);
-                Node right = generateNode(depth - 1);
-                node.setLeftChild(left);
-                node.setRightChild(right);
-                return node;
-            }
+            Node left = generateNode(depth - 1);
+            Node right = generateNode(depth - 1);
+            node.setLeftChild(left);
+            node.setRightChild(right);
+            return node;
         }
     }
 
@@ -81,8 +76,14 @@ public class GP {
     }
 
     public void evaluatePopulation() {
+//        int number = 0;
+
         for (Tree tree: population) {
-            tree.setFitness(computeFitness(tree));
+
+            float fitness = computeFitness(tree);
+//            System.out.println(fitness);
+            tree.setFitness(fitness);
+//            number++;
         }
     }
 
@@ -113,18 +114,23 @@ public class GP {
 
             List<Tree> nextGen = new ArrayList<>();
 
-            population.sort(Comparator.comparingDouble(Tree::getFitness));
+            population.sort(Comparator.comparingDouble(Tree::getFitness).reversed());
             nextGen.add(population.getFirst());
+
+//            System.out.println("Generation " + i + ": " + nextGen.getFirst().getFitness());
 
             while(nextGen.size() < population.size()) {
                 Tree parent1 = tournamentSelect(5);
                 Tree parent2 = tournamentSelect(5);
 
-                Tree child = crossover(parent1, parent2);
+                Tree child1 = crossover(parent1, parent2);
+                Tree child2 = crossover(parent2, parent1);
 
-                mutate(child);
+                mutate(child1);
+                mutate(child2);
 
-                nextGen.add(child.copy());
+                nextGen.add(child1.copy());
+                nextGen.add(child2.copy());
             }
 
             population = nextGen;
@@ -135,7 +141,7 @@ public class GP {
         Tree best = null;
         for (int i = 0; i < tournamentSize; i++) {
             Tree candidate = population.get(rand.nextInt(population.size()));
-            if (best == null || candidate.getFitness() < best.getFitness()) {
+            if (best == null || candidate.getFitness() > best.getFitness()) {
                 best = candidate;
             }
         }
@@ -151,10 +157,10 @@ public class GP {
         List<Node> nodes2 = copy2.getAllNodes();
 
         if (nodes1.isEmpty() && !nodes2.isEmpty()) {
-            return parent2;
+            return parent2.copy();
         }
         if (nodes2.isEmpty() && !nodes1.isEmpty()) {
-            return parent1;
+            return parent1.copy();
         }
 
         Node random1 = nodes1.get(rand.nextInt(nodes1.size()));
@@ -162,27 +168,69 @@ public class GP {
 
         Node copy = new Node(random2);
 
-        random1.setLeftChild(copy.getLeftChild());
-        random1.setRightChild(copy.getRightChild());
 
-        if (random2.getType() == Node.NodeType.TERMINAL) {
-            if (random2.getTerminalType() == Node.TerminalType.CONST) {
-                random1.setTerminal(copy.getTerminalType(), copy.getValue());
-            }
-            else {
-                random1.setTerminal(copy.getTerminalType());
-            }
+        if (random1 == nodes1.getFirst()) {
+            return copy2.copy();
         }
-        else {
-            random1.setFunction(copy.getFunction());
+
+        Node parent = findParent(nodes1.getFirst(), random1);
+
+        if (parent.getLeftChild() == random1) {
+            parent.setLeftChild(copy);
+        } else if (parent.getRightChild() == random1) {
+            parent.setRightChild(copy);
+        }
+
+        if (getTreeDepth(copy1.getRoot()) > maxDepth) {
+            return parent1.getFitness() > parent2.getFitness() ? parent1 : parent2;
         }
 
         return copy1;
     }
 
-    public Tree mutate(Tree original) {
+    private Node findParent(Node root, Node target) {
+        if (root == null) return null;
 
-        int chance = rand.nextInt(0, 100);
+        // Found target
+        if (root.getLeftChild() == target || root.getRightChild() == target) {
+            return root;
+        }
+
+        // Iterate through tree
+        Node leftResult = findParent(root.getLeftChild(), target);
+        if (leftResult != null) return leftResult;
+
+        return findParent(root.getRightChild(), target);
+    }
+
+    public static int getTreeDepth(Node node) {
+        if (node == null) {
+            return -1;
+        }
+
+        // Leaf Node
+        if (node.getFunction() == null) {
+            return 0;
+        }
+
+        // Recursive calls
+        int leftDepth = getTreeDepth(node.getLeftChild());
+        int rightDepth = getTreeDepth(node.getRightChild());
+
+        return 1 + Math.max(leftDepth, rightDepth);
+    }
+
+    private int findNodeDepth(Node current, Node target, int depth) {
+        if (current == null) return -1;
+        if (current == target) return depth;
+
+        int leftDepth = findNodeDepth(current.getLeftChild(), target, depth + 1);
+        if (leftDepth != -1) return leftDepth;
+
+        return findNodeDepth(current.getRightChild(), target, depth + 1);
+    }
+
+    public Tree mutate(Tree original) {
 
         Tree copy = original.copy();
         List<Node> nodes = copy.getAllNodes();
@@ -192,25 +240,37 @@ public class GP {
 
         Node target = nodes.get(rand.nextInt(nodes.size()));
 
-        Node mutatedSubtree = generateRandomTree().getRoot();
-
-        target.setFunction(mutatedSubtree.getFunction());
-        if (mutatedSubtree.getTerminalType() == Node.TerminalType.CONST) {
-            target.setTerminal(mutatedSubtree.getTerminalType(), mutatedSubtree.getValue());
-        }
-        else {
-            target.setTerminal(mutatedSubtree.getTerminalType());
+        if (target == copy.getRoot()) {
+            return new Tree(generateNode(maxDepth));
         }
 
-        target.setLeftChild(mutatedSubtree.getLeftChild());
-        target.setRightChild(mutatedSubtree.getRightChild());
+        int targetDepth = findNodeDepth(copy.getRoot(), target, 0);
+        int remainingDepth = maxDepth - targetDepth;
+
+        if (remainingDepth <= 1) {
+            remainingDepth = 1;
+        }
+
+        Node newSubtree = generateNode(remainingDepth);
+
+        Node parent = findParent(copy.getRoot(), target);
+
+        if (parent.getLeftChild() == target) {
+            parent.setLeftChild(newSubtree);
+        } else {
+            parent.setRightChild(newSubtree);
+        }
+
+        if (getTreeDepth(copy.getRoot()) > maxDepth) {
+            return original;
+        }
 
         return copy;
     }
 
     public Tree getBestTree() {
         return population.stream()
-                .min(Comparator.comparing(Tree::getFitness))
+                .max(Comparator.comparing(Tree::getFitness))
                 .orElse(null);
     }
 }

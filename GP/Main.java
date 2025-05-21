@@ -3,6 +3,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
@@ -21,7 +22,11 @@ public class Main {
         functions.add(new SubtractFunction());
         functions.add(new MultiplyFunction());
         functions.add(new DivideFunction());
-        GP gp = new GP(functions, 100, 2, 100, trainData);
+
+        long seed = System.currentTimeMillis();
+        Random random = new Random(seed);
+        GP gp = new GP(functions, 100, 5, 100, trainData, random);
+
 
         long startTime = System.currentTimeMillis();
 
@@ -42,6 +47,8 @@ public class Main {
             return;
         }
 
+//        System.out.println(bestTree.getFitness() * 100);
+
         int correct = 0;
 
         for (int i = 0; i < testData.size(); i++) {
@@ -52,12 +59,19 @@ public class Main {
             if (predicted == actual) {
                 correct++;
             }
+
+//            System.out.println("Test " + i + ": ");
+//            System.out.println("Predicted: " + predicted);
+//            System.out.println("Actual: " + actual);
         }
 
-        float accuracy = correct / testData.size();
+        float accuracy = correct / testData.size() * 100;
 
-        System.out.println("Best fitness: " + bestTree.getFitness());
-        System.out.println("Accuracy (within ±0.5 of adj close): " + String.format("%.2f", accuracy));
+        System.out.println("Duration of training: " + elapsedTime + "ms");
+        System.out.println("Accuracy against training data: " + String.format("%.2f", bestTree.getFitness() * 100) + "%");
+        System.out.println("Seed value: " + seed);
+        System.out.println("Correctly Classified: " + correct + "/" + testData.size());
+        System.out.println("Accuracy against test data: " + String.format("%.2f", accuracy) + "%");
     }
 
     private static List<StockData> readStockData(String filePath) {

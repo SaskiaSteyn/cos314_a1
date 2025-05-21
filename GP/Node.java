@@ -6,10 +6,10 @@ public class Node {
         OPEN, HIGH, LOW, CLOSE, ADJCLOSE, CONST
     }
 
-    public interface Function {
-        float apply(float a, float b);
-        String getName();
-    }
+//    public interface Function {
+//        float apply(float a, float b);
+//        String getName();
+//    }
 
     private NodeType type;
     private TerminalType terminalType;
@@ -131,29 +131,19 @@ public class Node {
                 case CONST: return value;
                 default: throw new RuntimeException("Unknown terminal type");
             }
-        } else {
-            float[] inputs;
-//            if (function.getArity() == 2) {
-//                inputs = new float[] { left.evaluate(data), right.evaluate(data) };
-//            } else if (function.getArity() == 1) {
-//                inputs = new float[] { left.evaluate(data) };
-//            } else {
-//                inputs = new float[0];
-//            }
-
+        }
+        else {
             if (left != null) {
                 if (right == null) {
-                    inputs = new float[] { left.evaluate(data) };
+                    return function.apply(new float[] { left.evaluate(data) });
                 }
                 else {
-                    inputs = new float[] { left.evaluate(data), right.evaluate(data) };
+                    return function.apply(new float[] { left.evaluate(data), right.evaluate(data) });
                 }
             }
             else {
                 throw new RuntimeException("Function Node had no children");
             }
-
-            return function.apply(inputs);
         }
     }
 
