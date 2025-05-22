@@ -1,8 +1,6 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -175,16 +173,6 @@ public class StockMLP {
         for (int i = 0; i < a.length; i++) {
             for (int j = 0; j < a[i].length; j++) {
                 result[i][j] = a[i][j] - b[i][j];
-            }
-        }
-        return result;
-    }
-    
-    private double[][] subtract(double[][] a, double b) {
-        double[][] result = new double[a.length][a[0].length];
-        for (int i = 0; i < a.length; i++) {
-            for (int j = 0; j < a[i].length; j++) {
-                result[i][j] = a[i][j] - b;
             }
         }
         return result;
