@@ -1,61 +1,76 @@
-Stock MLP Classifier - Setup Instructions
+Stock MLP Classifier - Java JAR Setup Instructions
 
 1. Prerequisites:
-   - Python 3.6 or higher installed on your system
-   - pip (Python package manager)
+   - Java Runtime Environment (JRE) 8 or higher installed
+   - Ensure Java is in your system PATH
+   - Verify installation by running:
+     java -version
 
-2. Create a Virtual Environment (Recommended):
+2. Prepare Your Data:
+   - Ensure you have two CSV files ready:
+     1) Training data (e.g., 'BTC_train.csv')
+     2) Test data (e.g., 'BTC_test.csv')
+   - Each CSV should contain these columns:
+     ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Output']
+   - The 'Output' column should be binary (0 or 1)
+
+3. Using the JAR File:
+   - Place the stockmlp.jar file in your working directory
+   - Place your CSV files in the same directory or note their full paths
+
+4. Running the Classifier:
    Open a terminal/command prompt and run:
+   
+   Windows:
+      java -jar stockmlp.jar
+   
+   macOS/Linux:
+      java -jar stockmlp.jar
 
-    On Windows:
-        python -m venv stock_mlp_env
-        stock_mlp_env\Scripts\activate
-    
-    On macOS/Linux:
-        python3 -m venv stock_mlp_env
-        source stock_mlp_env/bin/activate
-
-3. Install Required Packages:
-   With your virtual environment activated, run:
-        pip install numpy pandas scikit-learn
-
-4. Prepare Your Data:
-- Ensure you have two CSV files ready:
-  1) Training data (e.g., 'train_data.csv')
-  2) Test data (e.g., 'test_data.csv')
-- Each CSV should contain these columns at minimum:
-  ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Output']
-- The 'Output' column should be binary (0 or 1) indicating the prediction target
-
-5. Run the Classifier:
-- Save the provided Python script as 'stock_mlp.py'
-- Run the program with:
-        python stock_mlp.py
-- When prompted:
-  - Enter a random seed number (e.g., 42)
-  - Provide the path to your training data CSV
-  - Provide the path to your test data CSV
+5. Program Inputs:
+   When prompted:
+   - Enter a random seed number (e.g., 42)
+   - Provide the path to your training data CSV
+     Example: BTC_train.csv or C:/data/BTC_train.csv
+   - Provide the path to your test data CSV
+     Example: BTC_test.csv or C:/data/BTC_test.csv
 
 6. Expected Output:
-- The program will display training progress every 100 epochs
-- After training completes, it will show:
-  - Classification report
-  - Confusion matrix
-  - Final accuracy score
+   - Training progress every 100 epochs showing accuracy
+   - Final evaluation including:
+     - Classification report (precision, recall, F1)
+     - Confusion matrix
+     - Accuracy score
 
-7. Troubleshooting:
-- If you get package errors, ensure your virtual environment is activated
-- For file not found errors, check your CSV file paths are correct
-- For shape mismatch errors, verify your CSV files have the required columns
+7. Default Parameters:
+   - Network architecture: 64-32-1 (two hidden layers)
+   - Learning rate: 0.001
+   - Batch size: 64
+   - Epochs: 1000
+   - Activation: ReLU (hidden), Sigmoid (output)
 
-8. Deactivate Virtual Environment (when done):
-        deactivate
+8. Troubleshooting:
+   - "File not found": Verify CSV paths are correct
+   - "Number format error": Check CSV formatting
+   - "Out of memory": Increase heap size with:
+       java -Xmx2g -jar stockmlp.jar
+   - For other errors, check CSV files match expected format
+
+9. Advanced Options:
+   To modify network architecture or training parameters:
+   - Decompile the JAR (if allowed by license)
+   - Edit the source code
+   - Recompile with:
+       javac StockMLP.java
+       jar cvfe stockmlp.jar StockMLP *.class
+
+10. Example CSV Format:
+    Open,High,Low,Close,Adj Close,Output
+    46321.5,46387.2,46210.3,46345.6,46345.6,1
+    46345.6,46420.1,46285.4,46390.2,46390.2,0
+    ...
 
 Notes:
-- The model uses a 2-hidden-layer MLP with ReLU activation
+- The model automatically normalizes input features
 - Training uses mini-batch gradient descent
-- Default hyperparameters:
-- Learning rate: 0.001
-- Batch size: 64
-- Epochs: 1000
-- You can modify these in the script if needed
+- For large datasets, training may take several minutes
