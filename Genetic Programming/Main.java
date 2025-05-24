@@ -43,6 +43,8 @@ public class Main {
                 Tree bestTree = gp.getBestTree();
                 float trainingAccuracy = bestTree.getFitness() * 100;
 
+                float trainF1 = computeF1Score(bestTree, trainData);
+
                 int correct = 0;
                 for (StockData data : testData) {
                     if (bestTree.evaluate(data) == data.getOutput()) {
@@ -51,12 +53,16 @@ public class Main {
                 }
                 float testAccuracy = (float) correct / testData.size() * 100;
 
+                float testF1 = computeF1Score(bestTree, testData);
+
                 // Write results to CSV
-                csvWriter.append(String.format("%d,%d,%.2f,%.2f,%d,%d/%d\n",
+                csvWriter.append(String.format("%d,%d,%.2f,%.2f,%.2f,%.2f,%d,%d/%d\n",
                         run,
                         elapsedTime,
                         trainingAccuracy,
+                        trainF1,
                         testAccuracy,
+                        testF1,
                         seed,
                         correct,
                         testData.size()));
@@ -69,6 +75,39 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static float computeF1Score(Tree tree, List<StockData> testData) {
+
+        // True Positive
+        int TP = 0;
+
+        // False Positive
+        int FP = 0;
+
+        // False Negative
+        int FN = 0;
+
+        for (StockData data : testData) {
+            int predicted = tree.evaluate(data);
+            int actual = data.getOutput();
+
+            if (predicted == 1 && actual == 1) {
+                TP++;
+            }
+            else if (predicted == 1 && actual == 0) {
+                FP++;
+            }
+            else if (predicted == 0 && actual == 1) {
+                FN++;
+            }
+        }
+
+        float precision = (TP + FP == 0) ? 0 : (float) TP / (TP + FP);
+        float recall = (TP + FN == 0) ? 0 : (float) TP / (TP + FN);
+        float f1 = (precision + recall == 0) ? 0 : 2 * (precision * recall) / (precision + recall);
+
+        return f1;
     }
 
     private static List<StockData> readStockData(String filePath) {
