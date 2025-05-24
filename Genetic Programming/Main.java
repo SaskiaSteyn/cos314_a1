@@ -28,7 +28,7 @@ public class Main {
 
         try (FileWriter csvWriter = new FileWriter(outputCsvPath)) {
             // Write CSV header
-            csvWriter.append("Run,Training Duration (ms),Training Accuracy (%),Test Accuracy (%),Seed,Correct/Total\n");
+            csvWriter.append("Seed Value,Duration (ms),Training Accuracy (%),Training F1,Test Accuracy (%),Test F1,Test Correct/Total\n");
 
             // Run GP 10 times
             for (int run = 1; run <= 10; run++) {
@@ -56,16 +56,14 @@ public class Main {
                 float testF1 = computeF1Score(bestTree, testData);
 
                 // Write results to CSV
-                csvWriter.append(String.format("%d,%d,%.2f,%.2f,%.2f,%.2f,%d,%d/%d\n",
-                        run,
-                        elapsedTime,
+                csvWriter.append(String.format("%d,%.2f,%.2f,%.2f,%.2f,%.2f,%s\n",
+                        seed,
+                        elapsedTime / 1000.0,  // Convert to seconds with 2 decimals
                         trainingAccuracy,
                         trainF1,
                         testAccuracy,
                         testF1,
-                        seed,
-                        correct,
-                        testData.size()));
+                        String.format("%d/%d", correct, testData.size())));
 
                 System.out.printf("Run %d completed - Test Accuracy: %.2f%%\n", run, testAccuracy);
             }
