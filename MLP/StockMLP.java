@@ -97,7 +97,7 @@ public class StockMLP {
         double[][] result = new double[a.length][a[0].length];
         for (int i = 0; i < a.length; i++) {
             for (int j = 0; j < a[i].length; j++) {
-                result[i][j] = a[i][j] + b[0][j]; // Broadcasting bias
+                result[i][j] = a[i][j] + b[0][j]; 
             }
         }
         return result;
@@ -229,10 +229,12 @@ public class StockMLP {
         }
     }
     
-    public void train(double[][] X_train, double[][] y_train, double[][] X_val, double[][] y_val,
+     public void train(double[][] X_train, double[][] y_train, double[][] X_val, double[][] y_val,
                      int epochs, double learningRate, int batchSize, boolean verbose) {
         List<Integer> indices = new ArrayList<>();
         for (int i = 0; i < X_train.length; i++) indices.add(i);
+        
+        long startTime = System.currentTimeMillis();  // Start timing
         
         for (int epoch = 0; epoch < epochs; epoch++) {
             Collections.shuffle(indices, random);
@@ -265,6 +267,10 @@ public class StockMLP {
                 System.out.println(msg);
             }
         }
+        
+        long endTime = System.currentTimeMillis();  // End timing
+        double trainingTimeSeconds = (endTime - startTime);
+        System.out.printf("\nTraining completed in %.2f ms\n", trainingTimeSeconds);
     }
     
     public int[] predict(double[][] X) {
