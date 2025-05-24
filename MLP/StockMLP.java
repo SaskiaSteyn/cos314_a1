@@ -1,5 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,6 +10,29 @@ import java.util.Random;
 import java.util.Scanner;
 
 public class StockMLP {
+
+    // Put all needed variables here
+    int correct;
+    int size;
+    double trainAcc;
+    double valAcc;
+
+    public int getCorrect() {
+        return correct;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public double getTrainAcc() {
+        return trainAcc;
+    }
+
+    public double getValAcc() {
+        return valAcc;
+    }
+
     private static class Layer {
         double[][] weights;
         double[][] biases;
@@ -234,7 +259,7 @@ public class StockMLP {
         List<Integer> indices = new ArrayList<>();
         for (int i = 0; i < X_train.length; i++) indices.add(i);
         
-        long startTime = System.currentTimeMillis();  // Start timing
+//        long startTime = System.currentTimeMillis();  // Start timing
         
         for (int epoch = 0; epoch < epochs; epoch++) {
             Collections.shuffle(indices, random);
@@ -255,12 +280,12 @@ public class StockMLP {
             
             if (verbose && (epoch % 100 == 0 || epoch == epochs - 1)) {
                 int[] trainPred = predict(X_train);
-                double trainAcc = accuracyScore(y_train, trainPred);
+                trainAcc = accuracyScore(y_train, trainPred);
                 String msg = String.format("Epoch %4d, Train Acc: %.4f", epoch, trainAcc);
                 
                 if (X_val != null) {
                     int[] valPred = predict(X_val);
-                    double valAcc = accuracyScore(y_val, valPred);
+                    valAcc = accuracyScore(y_val, valPred);
                     msg += String.format(", Val Acc: %.4f", valAcc);
                 }
                 
@@ -268,9 +293,7 @@ public class StockMLP {
             }
         }
         
-        long endTime = System.currentTimeMillis();  // End timing
-        double trainingTimeSeconds = (endTime - startTime);
-        System.out.printf("\nTraining completed in %.2f ms\n", trainingTimeSeconds);
+
     }
     
     public int[] predict(double[][] X) {
@@ -301,7 +324,8 @@ public class StockMLP {
     
     // Evaluation metrics
     private double accuracyScore(double[][] y_true, int[] y_pred) {
-        int correct = 0;
+        correct = 0;
+        size = y_true.length;
         for (int i = 0; i < y_true.length; i++) {
             if ((y_true[i][0] >= 0.5 && y_pred[i] == 1) || (y_true[i][0] < 0.5 && y_pred[i] == 0)) {
                 correct++;
@@ -464,32 +488,32 @@ public class StockMLP {
              -1.821255978 * t * t * t * t + 1.330274429 * t * t * t * t * t);
         return z < 0 ? 1 - cd : cd;
     }
-    
-    public static void main(String[] args) {
+
+    public static String runMLP(String trainPath, String testPath, Scanner scanner) {
         System.out.println("Stock Purchase Classifier using MLP");
-        Scanner scanner = new Scanner(System.in);
-        
+
+//        Scanner scanner = new Scanner(System.in);
+
         try {
+
             System.out.print("Enter random seed for reproducibility: ");
             int seed = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
-            
-            System.out.print("Enter path to training data CSV: ");
-            String trainPath = scanner.nextLine();
-            
-            System.out.print("Enter path to test data CSV: ");
-            String testPath = scanner.nextLine();
-            
+//            scanner.nextLine();
+
+            if (seed == -1) {
+                return "";
+            }
+
             // Load and preprocess data
             double[][] X_train = null, y_train = null;
             double[] trainMean = null, trainStd = null;
-            
+
             // Read training data
             try (BufferedReader br = new BufferedReader(new FileReader(trainPath))) {
                 List<double[]> xList = new ArrayList<>();
                 List<double[]> yList = new ArrayList<>();
                 String line;
-                
+
                 br.readLine(); // Skip header
                 while ((line = br.readLine()) != null) {
                     String[] values = line.split(",");
@@ -498,32 +522,32 @@ public class StockMLP {
                         x[i] = Double.parseDouble(values[i]);
                     }
                     double y = Double.parseDouble(values[5]); // Output
-                    
+
                     xList.add(x);
                     yList.add(new double[]{y});
                 }
-                
+
                 X_train = xList.toArray(new double[0][]);
                 y_train = yList.toArray(new double[0][]);
-                
+
                 // Calculate mean and std
                 trainMean = new double[5];
                 trainStd = new double[5];
-                
+
                 for (int j = 0; j < 5; j++) {
                     double sum = 0;
                     for (double[] row : X_train) {
                         sum += row[j];
                     }
                     trainMean[j] = sum / X_train.length;
-                    
+
                     double variance = 0;
                     for (double[] row : X_train) {
                         variance += Math.pow(row[j] - trainMean[j], 2);
                     }
                     trainStd[j] = Math.sqrt(variance / X_train.length);
                 }
-                
+
                 // Normalize training data
                 for (double[] row : X_train) {
                     for (int j = 0; j < 5; j++) {
@@ -531,14 +555,14 @@ public class StockMLP {
                     }
                 }
             }
-            
+
             // Read and normalize test data
             double[][] X_test = null, y_test = null;
             try (BufferedReader br = new BufferedReader(new FileReader(testPath))) {
                 List<double[]> xList = new ArrayList<>();
                 List<double[]> yList = new ArrayList<>();
                 String line;
-                
+
                 br.readLine(); // Skip header
                 while ((line = br.readLine()) != null) {
                     String[] values = line.split(",");
@@ -547,52 +571,134 @@ public class StockMLP {
                         x[i] = Double.parseDouble(values[i]);
                     }
                     double y = Double.parseDouble(values[5]);
-                    
+
                     // Normalize using training stats
                     for (int j = 0; j < 5; j++) {
                         x[j] = (x[j] - trainMean[j]) / trainStd[j];
                     }
-                    
+
                     xList.add(x);
                     yList.add(new double[]{y});
                 }
-                
+
                 X_test = xList.toArray(new double[0][]);
                 y_test = yList.toArray(new double[0][]);
             }
-            
+
             // Initialize MLP
             StockMLP mlp = new StockMLP(
-                X_train[0].length,
-                new int[]{64, 32}, // Two hidden layers with 64 and 32 neurons
-                seed
+                    X_train[0].length,
+                    new int[]{64, 32}, // Two hidden layers with 64 and 32 neurons
+                    seed
             );
-            
+
             // Train the model
             System.out.println("\nTraining MLP model...");
+
+            long startTime = System.currentTimeMillis();
+
             mlp.train(
-                X_train, y_train,
-                X_test, y_test,
-                1000, // epochs
-                0.001, // learning rate
-                64, // batch size
-                true // verbose
+                    X_train, y_train,
+                    X_test, y_test,
+                    1000, // epochs
+                    0.001, // learning rate
+                    64, // batch size
+                    true // verbose
             );
-            
+
+            long endTime = System.currentTimeMillis();  // End timing
+            double trainingTimeSeconds = (endTime - startTime);
+//            System.out.printf("\nTraining completed in %.2f ms\n", trainingTimeSeconds);
+
+            // Test
+
+            // We have
+            // Seed
+            seed += 1;
+            // Duration(ms)
+            trainingTimeSeconds += 1;
+
+            // Training Accuracy
+            double trainAccuracy = mlp.getTrainAcc();
+
+            // Training F1
+
+
+            // Testing Accuracy
+            double testAccuracy = mlp.getValAcc();
+
+            // Testing F1
+//            mlp.f1Score();
+
+            // Testing Correct/Total
+            String ct = String.format("%d/%d", mlp.getCorrect(), mlp.getSize());
+
             // Evaluate on test set
             mlp.evaluate(X_train, y_train, "Training Set");
+            // Train Scores
             int[] trainPred = mlp.predict(X_train);
+
+            double f1Train = mlp.f1Score(y_train, trainPred);
             mlp.wilcoxonTest(y_train, trainPred);
-            
+
             mlp.evaluate(X_test, y_test, "Test Set");
+            // Test Scores
             int[] testPred = mlp.predict(X_test);
+
+            double f1Test = mlp.f1Score(y_test, testPred);
             mlp.wilcoxonTest(y_test, testPred);
-            
+
+            return String.format("%d,%.2f,%.2f,%.2f,%.2f,%.2f,%s\n",
+                    seed,
+                    trainingTimeSeconds / 1000.0,  // Convert to seconds with 2 decimals
+                    testAccuracy,
+                    f1Train,
+                    testAccuracy,
+                    f1Test,
+                    String.format("%d/%d", mlp.getCorrect(), mlp.getSize()));
+
         } catch (Exception e) {
             System.out.println("\nError: " + e.getMessage());
             System.out.println("Please check your input files and try again.");
+        }
+
+        return "";
+    }
+    
+    public static void main(String[] args) {
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter path to training data CSV: ");
+        String trainPath = scanner.nextLine();
+
+        System.out.print("Enter path to test data CSV: ");
+        String testPath = scanner.nextLine();
+
+//        scanner.nextLine();
+
+
+
+        try (FileWriter csvWriter = new FileWriter("./MLP.csv")) {
+            csvWriter.append("Seed Value,Duration (ms),Training Accuracy (%),Training F1,Test Accuracy (%),Test F1,Test Correct/Total\n");
+
+            for (int i = 0; i < 10; i++) {
+
+                String output = runMLP(trainPath, testPath, scanner);
+
+                if (output.isEmpty()) {
+                    scanner.close();
+                    return;
+                }
+
+                csvWriter.append(output);
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         } finally {
             scanner.close();
         }
     }
+
+
 }
