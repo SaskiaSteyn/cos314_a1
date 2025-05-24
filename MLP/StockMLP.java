@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -337,6 +338,126 @@ public class StockMLP {
         System.out.printf("0               %4d  %4d\n", matrix[0][0], matrix[0][1]);
         System.out.printf("1               %4d  %4d\n", matrix[1][0], matrix[1][1]);
     }
+
+     public void evaluate(double[][] X, double[][] y, String setName) {
+        int[] y_pred = predict(X);
+        
+        System.out.println("\n" + setName + " Evaluation:");
+        System.out.println("Classification Report:");
+        classificationReport(y, y_pred);
+        
+        System.out.println("\nConfusion Matrix:");
+        printConfusionMatrix(y, y_pred);
+        
+        double accuracy = accuracyScore(y, y_pred);
+        double f1 = f1Score(y, y_pred);
+        System.out.printf("\nAccuracy: %.4f\n", accuracy);
+        System.out.printf("F1 Score: %.4f\n", f1);
+    }
+
+    // Add F1 score calculation
+    private double f1Score(double[][] y_true, int[] y_pred) {
+        int tp = 0, fp = 0, fn = 0;
+        
+        for (int i = 0; i < y_true.length; i++) {
+            int actual = y_true[i][0] >= 0.5 ? 1 : 0;
+            int predicted = y_pred[i];
+            
+            if (actual == 1 && predicted == 1) tp++;
+            else if (actual == 0 && predicted == 1) fp++;
+            else if (actual == 1 && predicted == 0) fn++;
+        }
+        
+        double precision = (double) tp / (tp + fp);
+        double recall = (double) tp / (tp + fn);
+        return 2 * (precision * recall) / (precision + recall);
+    }
+
+    // Implementation of Wilcoxon signed-rank test in pure Java
+    private void wilcoxonTest(double[][] y_true, int[] y_pred) {
+    // For binary classification, we should look at the correctness of predictions
+    List<Double> differences = new ArrayList<>();
+    
+    for (int i = 0; i < y_true.length; i++) {
+        int actual = y_true[i][0] >= 0.5 ? 1 : 0;
+        int predicted = y_pred[i];
+        // Use 1 if correct, -1 if incorrect
+        differences.add(actual == predicted ? 1.0 : -1.0);
+    }
+    
+    // Convert to array for sorting
+    double[] diffs = new double[differences.size()];
+    for (int i = 0; i < differences.size(); i++) {
+        diffs[i] = differences.get(i);
+    }
+    
+    // Sort absolute values for ranking
+    double[] absDiffs = new double[diffs.length];
+    for (int i = 0; i < diffs.length; i++) {
+        absDiffs[i] = Math.abs(diffs[i]);
+    }
+    Arrays.sort(absDiffs);
+    
+    // Assign ranks (handling ties)
+    double[] ranks = new double[absDiffs.length];
+    for (int i = 0; i < absDiffs.length; ) {
+        int j = i;
+        while (j < absDiffs.length && absDiffs[j] == absDiffs[i]) {
+            j++;
+        }
+        double rank = (i + j + 1) / 2.0;
+        for (int k = i; k < j; k++) {
+            ranks[k] = rank;
+        }
+        i = j;
+    }
+    
+    // Calculate W+ and W-
+    double W_plus = 0;
+    double W_minus = 0;
+    for (int i = 0; i < diffs.length; i++) {
+        if (diffs[i] > 0) {
+            W_plus += ranks[i];
+        } else if (diffs[i] < 0) {
+            W_minus += ranks[i];
+        }
+    }
+    
+    // Use the smaller of W+ or W- as the test statistic
+    double W = Math.min(W_plus, W_minus);
+    int n = diffs.length;  // Number of non-zero differences
+    
+    // Normal approximation
+    double mean = n * (n + 1) / 4.0;
+    double stdDev = Math.sqrt(n * (n + 1) * (2 * n + 1) / 24.0);
+    double z = (W - mean) / stdDev;
+    
+    // Two-tailed p-value
+    double pValue = 2 * (1 - normalCDF(Math.abs(z)));
+    
+    System.out.println("\nWilcoxon Signed-Rank Test (Classification Performance):");
+    System.out.printf("W+ (sum of positive ranks): %.2f\n", W_plus);
+    System.out.printf("W- (sum of negative ranks): %.2f\n", W_minus);
+    System.out.printf("Test Statistic W: %.2f\n", W);
+    System.out.printf("z-score: %.4f\n", z);
+    System.out.printf("Approximate p-value: %.6f\n", pValue);
+    
+    if (pValue < 0.05) {
+        System.out.println("Result: Significant difference in performance (p < 0.05)");
+    } else {
+        System.out.println("Result: No significant difference in performance (p >= 0.05)");
+    }
+}
+    
+    // Helper function for normal CDF approximation
+    private double normalCDF(double z) {
+        // Abramowitz & Stegun approximation (1964)
+        double t = 1.0 / (1.0 + 0.2316419 * Math.abs(z));
+        double cd = 1.0 - 1.0 / Math.sqrt(2 * Math.PI) * Math.exp(-z * z / 2) * 
+            (0.319381530 * t + -0.356563782 * t * t + 1.781477937 * t * t * t + 
+             -1.821255978 * t * t * t * t + 1.330274429 * t * t * t * t * t);
+        return z < 0 ? 1 - cd : cd;
+    }
     
     public static void main(String[] args) {
         System.out.println("Stock Purchase Classifier using MLP");
@@ -453,8 +574,13 @@ public class StockMLP {
             );
             
             // Evaluate on test set
-            System.out.println("\nFinal Test Set Evaluation:");
-            mlp.evaluate(X_test, y_test);
+            mlp.evaluate(X_train, y_train, "Training Set");
+            int[] trainPred = mlp.predict(X_train);
+            mlp.wilcoxonTest(y_train, trainPred);
+            
+            mlp.evaluate(X_test, y_test, "Test Set");
+            int[] testPred = mlp.predict(X_test);
+            mlp.wilcoxonTest(y_test, testPred);
             
         } catch (Exception e) {
             System.out.println("\nError: " + e.getMessage());
